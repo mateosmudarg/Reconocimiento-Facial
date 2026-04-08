@@ -65,5 +65,3 @@ def eliminar_usuarios_por_ids(ids):
     query = f"DELETE FROM usuarios WHERE id IN ({placeholders})"
     connect(query, ids)
     return True
-
-

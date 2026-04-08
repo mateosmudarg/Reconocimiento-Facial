@@ -5,7 +5,7 @@ import data.guardado as guardado
 import cv2
 import datetime
 import os
-from data.db import obtener_usuarios 
+
 def empezar_reconocimiento_facial():
     try:
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -64,6 +64,3 @@ def empezar_reconocimiento_facial():
 
     except Exception as e:
         messagebox.showerror("Error", f"Ocurrió un error: {e}")
-
-
-        
