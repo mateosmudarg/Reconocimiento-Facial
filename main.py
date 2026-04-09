@@ -7,7 +7,7 @@ from core import gestion_movimientos
 import core.reconocimiento as reconocimiento
 from gui import movimientos, lista_usuarios
 from data.db import obtener_usuarios
-
+from gui.handlers import on_nuevo_usuario
 
 root = tk.Tk()
 root.title("Sistema de Reconocimiento Facial")
@@ -27,7 +27,7 @@ title.pack(pady=(0, 15))
 ttk.Button(
     main_frame,
     text="Nuevo usuario",
-    command=reconocimiento.empezar_reconocimiento_facial,
+    command=lambda: on_nuevo_usuario(),
 ).pack(fill="x", pady=5)
 
 ttk.Button(
