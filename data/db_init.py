@@ -1,7 +1,7 @@
 import sqlite3
 import os
-
-DB_NAME = "reconocimientos.db"
+from data.read_config import read_config
+DB_NAME = read_config("database")["name"]
 
 def init_db(db_name: str = DB_NAME) -> bool:
     db_exists = os.path.exists(db_name)
