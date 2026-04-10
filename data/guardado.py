@@ -1,21 +1,23 @@
-from tkinter import messagebox
-import sqlite3
+import os
 from data.db import agregar_usuario, agregar_movimiento
 
-def guardar_reconocimiento_facial(image_path, name):
-    try:
-        with open(image_path, 'rb') as image_file:
-            img_data = image_file.read()
-        agregar_usuario(name, img_data)
-        messagebox.showinfo("Éxito", "Reconocimiento e imagen guardados exitosamente.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Ocurrió un error: {e}")
+def leer_imagen(path):
+    if not os.path.exists(path):
+        raise FileNotFoundError("La imagen no existe")
     
+    with open(path, 'rb') as f:
+        return f.read()
+
+def guardar_reconocimiento_facial(image_path, name):
+    if not name:
+        raise ValueError("El nombre no puede estar vacío")
+
+    img_data = leer_imagen(image_path)
+    agregar_usuario(name, img_data)
+
 def guardar_movimiento(id_usuario, fecha, img_movimiento, tipo):
-    try:
-        with open(img_movimiento, 'rb') as image_file:
-            img_data = image_file.read()
-        agregar_movimiento(id_usuario, fecha, img_data, tipo)
-        messagebox.showinfo("Éxito", "Movimiento e imagen guardados exitosamente.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Ocurrió un error: {e}")
+    if not id_usuario:
+        raise ValueError("ID de usuario inválido")
+
+    img_data = leer_imagen(img_movimiento)
+    agregar_movimiento(id_usuario, fecha, img_data, tipo)

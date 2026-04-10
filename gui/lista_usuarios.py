@@ -14,7 +14,7 @@ def lista_usuarios(root):
         return
 
     total_pages = (len(usuarios) + per_page - 1) // per_page
-    if page > total_pages:  # Aseguramos que no se pase del total de páginas
+    if page > total_pages: 
         page = total_pages
     if page < 1:
         page = 1
@@ -23,10 +23,8 @@ def lista_usuarios(root):
     end_index = start_index + per_page
     page_records = usuarios[start_index:end_index]
 
-    # Crear ventana o actualizar si ya existe
     if hasattr(lista_usuarios, "records_window") and lista_usuarios.records_window.winfo_exists():
         records_window = lista_usuarios.records_window
-        # Limpiar contenido previo
         for widget in records_window.winfo_children():
             widget.destroy()
     else:

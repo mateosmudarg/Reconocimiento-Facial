@@ -3,7 +3,44 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 import io
 from data.db import obtener_movimientos, obtener_usuarios
+from data.guardado import guardar_movimiento
+import os
 from datetime import datetime
+from core.movimientos import reconocer_usuario
+
+def facial(tipo):
+    try:
+        registros = obtener_usuarios(asc=True, limit=0)
+
+        if not registros:
+            messagebox.showinfo("Salida", "No hay imágenes en la base de datos.")
+            return
+
+        resultado = reconocer_usuario(registros)
+
+        if "error" in resultado:
+            messagebox.showerror("Error", resultado["error"])
+            return
+
+        if resultado.get("ok"):
+            messagebox.showinfo(
+                "Entrada registrada",
+                f"Bienvenido: {resultado['usuario']}\nHora: {resultado['hora']}"
+            )
+
+            guardar_movimiento(
+                resultado["id"],
+                resultado["fecha"],
+                resultado["imagen"],
+                tipo
+            )
+
+            os.remove(resultado["imagen"])
+        else:
+            messagebox.showinfo("Entrada", "No se encontró coincidencia de rostro.")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Ocurrió un error: {e}")
 
 def mostrar_movimientos(parent):
     top = tk.Toplevel(parent)

@@ -3,11 +3,11 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
-from core import gestion_movimientos
+from core import movimientos
 import core.reconocimiento as reconocimiento
 from gui import movimientos, lista_usuarios
 from data.db import obtener_usuarios
-
+from gui import handlers
 
 root = tk.Tk()
 root.title("Sistema de Reconocimiento Facial")
@@ -27,7 +27,7 @@ title.pack(pady=(0, 15))
 ttk.Button(
     main_frame,
     text="Nuevo usuario",
-    command=reconocimiento.empezar_reconocimiento_facial,
+    command=lambda: handlers.on_nuevo_usuario(),
 ).pack(fill="x", pady=5)
 
 ttk.Button(
@@ -39,13 +39,13 @@ ttk.Button(
 ttk.Button(
     main_frame,
     text="Validar entrada",
-    command=lambda: gestion_movimientos.facial("Entrada"),
+    command=lambda: handlers.on_agregar_movimiento("Entrada"),
 ).pack(fill="x", pady=5)
 
 ttk.Button(
     main_frame,
     text="Validar salida",
-    command=lambda: gestion_movimientos.facial("Salida"),
+    command=lambda: handlers.on_agregar_movimiento("Salida"),
 ).pack(fill="x", pady=5)
 
 ttk.Button(
