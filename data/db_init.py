@@ -1,9 +1,10 @@
 import sqlite3
-from tkinter import messagebox
+import os
 
 DB_NAME = "reconocimientos.db"
 
-def create_tables(db_name: str = DB_NAME) -> None:
+def init_db(db_name: str = DB_NAME) -> bool:
+    db_exists = os.path.exists(db_name)
 
     create_usuarios_table = """
     CREATE TABLE IF NOT EXISTS usuarios (
@@ -31,11 +32,8 @@ def create_tables(db_name: str = DB_NAME) -> None:
             cursor.execute(create_usuarios_table)
             cursor.execute(create_movimientos_table)
             conn.commit()
-        messagebox.showinfo("Éxito", "Tablas creadas correctamente.")
-    except sqlite3.Error as e:
-        messagebox.showerror("Error de base de datos", f"No se pudieron crear las tablas: {e}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Ocurrió un error inesperado: {e}")
 
-if __name__ == "__main__":
-    create_tables()
+        return not db_exists
+
+    except sqlite3.Error as e:
+        raise RuntimeError(f"Error de base de datos: {e}")
