@@ -1,7 +1,7 @@
 from tkinter import messagebox, simpledialog
 import os
 import data.guardado as guardado
-from core.reconocimiento import empezar_reconocimiento_facial
+from core.reconocimiento import guardar_usuario_facial
 
 def iniciar_reconocimiento():
     
@@ -18,4 +18,4 @@ def iniciar_reconocimiento():
     def on_error(msg):
         messagebox.showerror("Error", msg)
 
-    empezar_reconocimiento_facial(on_capture, on_error)
+    guardar_usuario_facial(on_capture, on_error)
