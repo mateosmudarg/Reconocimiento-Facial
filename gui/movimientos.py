@@ -11,13 +11,11 @@ from core.movimientos import reconocer_usuario
 def facial(tipo):
     try:
         registros = obtener_usuarios(asc=True, limit=0)
-
         if not registros:
             messagebox.showinfo("Salida", "No hay imágenes en la base de datos.")
             return
 
         resultado = reconocer_usuario(registros)
-
         if "error" in resultado:
             messagebox.showerror("Error", resultado["error"])
             return
@@ -38,7 +36,6 @@ def facial(tipo):
             os.remove(resultado["imagen"])
         else:
             messagebox.showinfo("Entrada", "No se encontró coincidencia de rostro.")
-
     except Exception as e:
         messagebox.showerror("Error", f"Ocurrió un error: {e}")
 
@@ -111,7 +108,6 @@ def mostrar_movimientos(parent):
         else:
             movimientos_filtrados[:] = [m for m in movimientos if m[4] == tipo]
         actualizar_tabla(movimientos_filtrados)
-
     tipo_var.trace_add("write", aplicar_filtro)
     actualizar_tabla(movimientos_filtrados)
 
@@ -161,6 +157,5 @@ def mostrar_movimientos(parent):
     for col in columnas:
         tree.heading(col, text=col)
     tree.heading("Fecha", text="Fecha ▲", command=ordenar_fecha)
-
     tree.bind("<<TreeviewSelect>>", mostrar_preview)
     tree.bind("<Double-1>", abrir_imagen)
