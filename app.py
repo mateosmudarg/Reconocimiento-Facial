@@ -2,7 +2,9 @@ import tkinter as tk
 from tkinter import messagebox
 from data.db_init import init_db
 from gui.ventana_principal import crear_ui, configurar_estilos
+from gui.configuracion import setup_config
 
+import os
 class App:
     def __init__(self):
         self.root = tk.Tk()
@@ -12,12 +14,12 @@ class App:
 
     def setup(self):
         try:
-            db_creada = init_db()
-            if db_creada:
-                self.root.after(100, lambda: messagebox.showinfo(
-                    "Bienvenido",
-                    "Base de datos creada correctamente."
-                ))
+            if not os.path.exists("config.json"):
+                setup_config(self.root)
+
+            from data.db_init import init_db
+            init_db()
+
         except Exception as e:
             messagebox.showerror("Error crítico", str(e))
             return False

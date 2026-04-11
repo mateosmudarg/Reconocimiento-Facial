@@ -1,5 +1,4 @@
 /otros
-reconocimientos.db
 
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,python,database,git
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,python,database,git
@@ -13,6 +12,7 @@ reconocimientos.db
 *.sqlite3
 *.db-shm
 *.db-wal
+config.json
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:
