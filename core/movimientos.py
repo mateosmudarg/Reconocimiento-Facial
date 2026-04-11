@@ -1,8 +1,11 @@
 import cv2
 import datetime
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFile
 import io
+import time
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def reconocer_usuario(registros):
     face_cascade = cv2.CascadeClassifier(
@@ -14,8 +17,13 @@ def reconocer_usuario(registros):
     known_ids = []
 
     for id, fecha, nombre, imagen in registros:
-        img = Image.open(io.BytesIO(imagen)).convert('L')
-        img_np = np.array(img)
+        if not imagen:
+            continue
+        try:
+            img = Image.open(io.BytesIO(bytes(imagen))).convert('L')
+            img_np = np.array(img)
+        except Exception:
+            continue
 
         faces = face_cascade.detectMultiScale(
             img_np, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
@@ -26,13 +34,17 @@ def reconocer_usuario(registros):
             known_names.append(nombre)
             known_ids.append(id)
 
+    if not known_faces:
+        return {"ok": False}
+
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         return {"error": "No se pudo abrir la cámara."}
 
-    encontrado = False
-    usuario_encontrado = None
-    usuario_id = None
+    start = time.time()
+    while time.time() - start < 1.5:
+        cap.read()
+
     path = "temp_face.jpg"
 
     while True:
@@ -45,6 +57,10 @@ def reconocer_usuario(registros):
             gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
         )
 
+        encontrado = False
+        usuario_encontrado = None
+        usuario_id = None
+
         for (x, y, w, h) in faces:
             rostro_actual = gray[y:y+h, x:x+w]
 
@@ -55,8 +71,9 @@ def reconocer_usuario(registros):
                     )
 
                     diff = cv2.absdiff(rostro_actual_resized, known)
+                    score = np.mean(diff)
 
-                    if np.mean(diff) < 40:
+                    if score < 25:
                         encontrado = True
                         usuario_encontrado = known_names[i]
                         usuario_id = known_ids[i]
@@ -68,8 +85,13 @@ def reconocer_usuario(registros):
                 break
 
         if encontrado:
-            fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            hora = datetime.datetime.now().strftime("%H:%M:%S")
+            now = datetime.datetime.now()
+            fecha = now.strftime("%Y-%m-%d %H:%M:%S")
+            hora = now.strftime("%H:%M:%S")
+
+            ret, frame = cap.read()
+            if not ret:
+                break
 
             cv2.imwrite(path, frame)
 

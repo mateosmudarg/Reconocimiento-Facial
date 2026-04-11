@@ -1,5 +1,6 @@
 import cv2
 import datetime
+import time
 
 def guardar_usuario_facial(callback_on_capture, callback_on_error):
     try:
@@ -12,8 +13,13 @@ def guardar_usuario_facial(callback_on_capture, callback_on_error):
             callback_on_error("No se pudo abrir la cámara.")
             return
 
+        start = time.time()
+        while time.time() - start <  1.5:
+            cap.read()
+
         countdown_started = False
         countdown_start_time = None
+        path = "temp_face.jpg"
 
         while True:
             ret, frame = cap.read()
@@ -28,8 +34,10 @@ def guardar_usuario_facial(callback_on_capture, callback_on_error):
                 minNeighbors=5,
                 minSize=(30, 30)
             )
+
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+
             if len(faces) > 0:
                 if not countdown_started:
                     countdown_started = True
@@ -49,7 +57,11 @@ def guardar_usuario_facial(callback_on_capture, callback_on_error):
                         2
                     )
                 else:
-                    path = "temp_face.jpg"
+                    ret, frame = cap.read()
+                    if not ret:
+                        callback_on_error("Error capturando imagen.")
+                        break
+
                     cv2.imwrite(path, frame)
 
                     cap.release()
