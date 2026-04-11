@@ -1,94 +1,128 @@
 import json
-from tkinter import simpledialog
-from .dialogs import info, exito, advertencia, error, confirmar, mostrar_excepcion
+import tkinter as tk
+from tkinter import ttk
+from .dialogs import exito, advertencia, confirmar, mostrar_excepcion
 
 
-def _ask_required_string(root, title, prompt, show=None):
-    while True:
-        value = simpledialog.askstring(title, prompt, parent=root, show=show)
+class ConfigWindow(tk.Toplevel):
+    def __init__(self, root):
+        super().__init__(root)
+        self.title("Configuración")
+        self.resizable(False, False)
 
-        if value is None:
-            if confirmar("¿Cancelar configuración?"):
-                raise Exception("Configuración cancelada")
-            continue
+        self.transient(root)
+        self.grab_set()
 
-        value = value.strip()
+        self.config_data = {"database": {}}
 
-        if not value:
-            advertencia("Este campo es obligatorio")
-            continue
+        self._build_ui()
+        self._center(root)
 
-        return value
+    def _center(self, root):
+        self.update_idletasks()
 
+        w = 300
+        h = 300
 
-def _select_db_type(root):
-    while True:
-        db_type = simpledialog.askstring(
-            "Base de datos",
-            "Tipo de base de datos (sqlite/mysql):",
-            parent=root
+        x = root.winfo_x() + (root.winfo_width() // 2) - (w // 2)
+        y = root.winfo_y() + (root.winfo_height() // 2) - (h // 2)
+
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+    def _build_ui(self):
+        frame = ttk.Frame(self, padding=15)
+        frame.pack(fill="both", expand=True)
+
+        ttk.Label(frame, text="Base de datos").pack(anchor="w")
+
+        self.db_type = ttk.Combobox(
+            frame, values=["sqlite", "mysql"], state="readonly", height=2
         )
+        self.db_type.pack(fill="x", pady=(0, 10))
+        self.db_type.bind("<<ComboboxSelected>>", self._render_fields)
 
-        if db_type is None:
-            if confirmar("¿Cancelar configuración?"):
-                raise Exception("Configuración cancelada")
-            continue
+        self.fields_frame = ttk.Frame(frame)
+        self.fields_frame.pack(fill="both", expand=True)
 
-        db_type = db_type.lower().strip()
+        btns = ttk.Frame(frame)
+        btns.pack(fill="x", pady=(10, 0))
 
-        if db_type in ("sqlite", "mysql"):
-            return db_type
+        ttk.Button(btns, text="Cancelar", command=self._cancel).pack(side="right")
+        ttk.Button(btns, text="Guardar", command=self._save).pack(side="right", padx=5)
 
-        error("Tipo inválido. Usa 'sqlite' o 'mysql'")
+    def _clear_fields(self):
+        for w in self.fields_frame.winfo_children():
+            w.destroy()
+
+    def _render_fields(self, event=None):
+        self._clear_fields()
+        self.inputs = {}
+
+        db_type = self.db_type.get()
+
+        if db_type == "sqlite":
+            ttk.Label(self.fields_frame, text="Archivo:").pack(anchor="w")
+            entry = ttk.Entry(self.fields_frame)
+            entry.pack(fill="x", pady=5)
+            self.inputs["nombre"] = entry
+
+        elif db_type == "mysql":
+            for label, key, show in [
+                ("Host", "host", None),
+                ("Usuario", "user", None),
+                ("Contraseña", "password", "*"),
+                ("DB", "db", None),
+            ]:
+                ttk.Label(self.fields_frame, text=label + ":").pack(anchor="w")
+                e = ttk.Entry(self.fields_frame, show=show)
+                e.pack(fill="x", pady=2)
+                self.inputs[key] = e
+
+    def _validate(self):
+        for k, e in self.inputs.items():
+            if not e.get().strip():
+                advertencia(f"Completar: {k}")
+                return False
+        return True
+
+    def _save(self):
+        try:
+            if not self._validate():
+                return
+
+            db_type = self.db_type.get()
+
+            if db_type == "sqlite":
+                nombre = self.inputs["nombre"].get().strip()
+                if not nombre.endswith(".db"):
+                    nombre += ".db"
+
+                self.config_data["database"]["url"] = f"sqlite:///{nombre}"
+
+            elif db_type == "mysql":
+                host = self.inputs["host"].get().strip()
+                user = self.inputs["user"].get().strip()
+                password = self.inputs["password"].get().strip()
+                db = self.inputs["db"].get().strip()
+
+                self.config_data["database"][
+                    "url"
+                ] = f"mysql+pymysql://{user}:{password}@{host}:3306/{db}"
+
+            with open("config.json", "w", encoding="utf-8") as f:
+                json.dump(self.config_data, f, indent=4)
+
+            exito("Configuración guardada")
+            self.destroy()
+
+        except Exception as e:
+            mostrar_excepcion(e)
+
+    def _cancel(self):
+        if confirmar("¿Cancelar configuración?"):
+            self.destroy()
 
 
 def setup_config(root):
-    try:
-        info("Configura la base de datos")
-
-        config = {"database": {}}
-        db_type = _select_db_type(root)
-
-        if db_type == "sqlite":
-            nombre = _ask_required_string(
-                root,
-                "SQLite",
-                "Nombre del archivo (ej: reconocimientos.db):"
-            )
-
-            if not nombre.endswith(".db"):
-                nombre += ".db"
-
-            config["database"]["url"] = f"sqlite:///{nombre}"
-
-        elif db_type == "mysql":
-            host = _ask_required_string(root, "MySQL", "Host:")
-            user = _ask_required_string(root, "MySQL", "Usuario:")
-            password = _ask_required_string(root, "MySQL", "Contraseña:", show="*")
-            db = _ask_required_string(root, "MySQL", "Nombre de la base:")
-
-            port = simpledialog.askstring(
-                "MySQL",
-                "Puerto (default 3306):",
-                parent=root
-            )
-            port = port.strip() if port else "3306"
-
-            config["database"]["url"] = (
-                f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
-            )
-
-        try:
-            with open("config.json", "w", encoding="utf-8") as f:
-                json.dump(config, f, indent=4)
-
-        except Exception as e:
-            raise Exception(f"No se pudo guardar config.json: {e}")
-
-        exito("Configuración guardada correctamente")
-
-    except Exception as e:
-        if str(e) == "Configuración cancelada":
-            advertencia("Configuración cancelada por el usuario")
-        else:
-            mostrar_excepcion(e)
+    win = ConfigWindow(root)
+    root.wait_window(win)
