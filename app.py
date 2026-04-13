@@ -1,34 +1,36 @@
-import tkinter as tk
-from tkinter import messagebox
+import sys
+import os
+
+from PyQt5.QtWidgets import QApplication, QMessageBox
+
 from data.db_init import init_db
-from gui.ventana_principal import crear_ui, configurar_estilos
+from gui.ventana_principal import VentanaPrincipal, configurar_estilos
 from gui.configuracion import setup_config
 
-import os
+
 class App:
     def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("Sistema de Reconocimiento Facial")
-        self.root.geometry("400x400")
-        self.root.resizable(False, False)
+        self.app = QApplication(sys.argv)
+        self.window = None
 
     def setup(self):
         try:
             if not os.path.exists("config.json"):
-                setup_config(self.root)
+                # IMPORTANTE: ahora deberías adaptar setup_config a PyQt
+                setup_config()
 
-            from data.db_init import init_db
             init_db()
 
         except Exception as e:
-            messagebox.showerror("Error crítico", str(e))
+            QMessageBox.critical(None, "Error crítico", str(e))
             return False
 
-        configurar_estilos()
-        crear_ui(self.root)
+        configurar_estilos(self.app)
 
+        self.window = VentanaPrincipal()
         return True
 
     def run(self):
         if self.setup():
-            self.root.mainloop()
+            self.window.show()
+            sys.exit(self.app.exec_())

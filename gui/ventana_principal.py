@@ -1,27 +1,73 @@
-from tkinter import ttk
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel
+from PyQt5.QtCore import Qt
+
 from gui import movimientos, lista_usuarios, handlers
 
 
-def configurar_estilos():
-    style = ttk.Style()
-    style.configure("TButton", font=("Segoe UI", 11), padding=6)
-    style.configure("Title.TLabel", font=("Segoe UI", 16, "bold"))
+def configurar_estilos(app):
+    app.setStyleSheet(
+        """
+        QPushButton {
+            font-family: Segoe UI;
+            font-size: 11pt;
+            padding: 6px;
+        }
+        QLabel#title {
+            font-family: Segoe UI;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+    """
+    )
 
+def crear_boton(text, callback):
+    btn = QPushButton(text)
+    btn.clicked.connect(callback)
+    return btn
 
-def crear_boton(parent, text, command):
-    btn = ttk.Button(parent, text=text, command=command)
-    btn.pack(fill="x", pady=5)
+class VentanaPrincipal(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Sistema de Reconocimiento Facial")
+        self.setGeometry(100, 100, 400, 400)
 
+        self.init_ui()
 
-def crear_ui(root):
-    frame = ttk.Frame(root, padding=20)
-    frame.pack(expand=True)
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignTop)
+        layout.setSpacing(10)
 
-    title = ttk.Label(frame, text="Gestión de Usuarios", style="Title.TLabel")
-    title.pack(pady=(0, 15))
+        title = QLabel("Gestión de Usuarios")
+        title.setObjectName("title")
+        title.setAlignment(Qt.AlignCenter)
 
-    crear_boton(frame, "Nuevo usuario", handlers.on_nuevo_usuario)
-    crear_boton(frame, "Lista de usuarios", lambda: lista_usuarios.lista_usuarios(root))
-    crear_boton(frame, "Validar entrada", lambda: handlers.on_agregar_movimiento("Entrada"))
-    crear_boton(frame, "Validar salida", lambda: handlers.on_agregar_movimiento("Salida"))
-    crear_boton(frame, "Lista de Movimientos", lambda: movimientos.mostrar_movimientos(root))
+        layout.addWidget(title)
+
+        layout.addWidget(crear_boton("Nuevo usuario", handlers.on_nuevo_usuario))
+
+        layout.addWidget(
+            crear_boton(
+                "Lista de usuarios", lambda: lista_usuarios.lista_usuarios(self)
+            )
+        )
+
+        layout.addWidget(
+            crear_boton(
+                "Validar entrada", lambda: handlers.on_agregar_movimiento("Entrada")
+            )
+        )
+
+        layout.addWidget(
+            crear_boton(
+                "Validar salida", lambda: handlers.on_agregar_movimiento("Salida")
+            )
+        )
+
+        layout.addWidget(
+            crear_boton(
+                "Lista de Movimientos", lambda: movimientos.mostrar_movimientos(self)
+            )
+        )
+
+        self.setLayout(layout)
