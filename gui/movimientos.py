@@ -40,6 +40,16 @@ def facial(tipo):
         messagebox.showerror("Error", f"Ocurrió un error: {e}")
 
 def mostrar_movimientos(parent):
+    try:
+        movimientos = obtener_movimientos(limit=0)
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+        return
+
+    if not movimientos:
+        messagebox.showinfo("Atención", "No hay registros en la base de datos.")
+        return
+    
     top = tk.Toplevel(parent)
     top.title("Movimientos Registrados")
     top.geometry("950x550")
@@ -76,12 +86,6 @@ def mostrar_movimientos(parent):
     label_img = tk.Label(panel, bg="#e0e0e0", width=200, height=200)
     label_img.pack(pady=20)
     img_preview = None
-
-    try:
-        movimientos = obtener_movimientos(limit=0)
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
-        return
 
     try:
         usuarios = obtener_usuarios(limit=0)

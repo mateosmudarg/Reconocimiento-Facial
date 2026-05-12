@@ -10,7 +10,7 @@ def lista_usuarios(root):
     per_page = 3
     page = 1
     if not usuarios:
-        messagebox.showinfo("Consulta", "No hay registros en la base de datos.")
+        messagebox.showinfo("Atención", "No hay registros en la base de datos.")
         return
 
     total_pages = (len(usuarios) + per_page - 1) // per_page
