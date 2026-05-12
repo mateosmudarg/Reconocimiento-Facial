@@ -1,6 +1,6 @@
 from tkinter import ttk
 from gui import movimientos, lista_usuarios, handlers
-import core.arduino
+import arduino.serial
 
 def configurar_estilos():
     style = ttk.Style()
