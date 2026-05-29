@@ -1,5 +1,9 @@
 /otros
 
+# InsightFace / modelos descargados
+~/.insightface/
+*.onnx
+
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,python,database,git
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,python,database,git
 

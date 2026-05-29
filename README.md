@@ -1,118 +1,120 @@
-# 🎯 Sistema de Reconocimiento Facial
+# 🎯 RecFac · Control de Accesos por Reconocimiento Facial
 
-Aplicación de escritorio desarrollada en Python que permite identificar y gestionar usuarios mediante reconocimiento facial, utilizando una interfaz gráfica basada en Tkinter y almacenamiento local con SQLite.
-
----
-
-## 🚧 Estado del proyecto
-
-⚠️ **En desarrollo activo**
-El proyecto se encuentra en una etapa temprana. Algunas funcionalidades pueden ser inestables o estar incompletas.
+Sistema **cliente-servidor** para el control de ingresos y egresos de personal
+de una empresa mediante reconocimiento facial. Reemplaza por completo la versión
+monolítica anterior (Tkinter + SQLite + Haar Cascade) por una arquitectura
+moderna, escalable y lista para producción.
 
 ---
 
-## 📌 Descripción
+## 🏗️ Arquitectura
 
-Este sistema permite registrar usuarios junto con sus datos faciales y posteriormente identificarlos mediante procesamiento de imágenes en tiempo real. Está orientado a fines educativos y experimentales en el área de visión por computadora.
-
----
-
-## ✨ Funcionalidades actuales
-
-* Registro de usuarios
-* Captura de datos faciales desde cámara
-* Identificación básica de usuarios
-* Almacenamiento de datos en SQLite (Configurable)
-* Interfaz gráfica con Tkinter
-* Inicialización automática de base de datos
-
----
-
-## 🛠️ Tecnologías utilizadas
-
-* **Python 3**
-* **Tkinter** — interfaz gráfica
-* **SQLite** — base de datos local
-* **OpenCV** — procesamiento de imágenes
-
----
-
-## 📦 Requisitos
-
-* Python 3.8 o superior
-* pip
-* Cámara web funcional
-
----
-
-## ⚙️ Instalación
-
-Clonar el repositorio:
-
-```bash
-git clone https://github.com/tu-usuario/sistema-reconocimiento-facial.git
-cd sistema-reconocimiento-facial
+```
+┌──────────────────────────┐         REST + WebSocket        ┌───────────────────────────┐
+│  CLIENTE (Kiosko/Cámara)  │  ───────────────────────────▶  │  SERVIDOR (API central)    │
+│  PySide6 + InsightFace    │                                 │  FastAPI + PostgreSQL      │
+│  · Captura de cámara      │   embeddings (512-d, ArcFace)   │  · Auth JWT                │
+│  · Detección + embedding  │  ◀───────────────────────────  │  · Empleados / Movimientos │
+│  · Registro entrada/salida│         resultado + evento      │  · Estadísticas            │
+│  · Sincronización         │                                 │  · Monitoreo en vivo (WS)  │
+│  · Control puerta Arduino │                                 │  · Dashboard web           │
+└──────────────────────────┘                                 └───────────────────────────┘
 ```
 
-Crear entorno virtual (recomendado):
+- **El reconocimiento corre en el cliente** (InsightFace/ArcFace), distribuyendo
+  la carga de cómputo. El servidor solo almacena y compara *embeddings* por
+  similitud coseno → base de datos portable, sin extensiones vectoriales.
+- **Tiempo real** vía WebSocket: cada movimiento se transmite al panel al instante.
 
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux / Mac
-venv\Scripts\activate     # Windows
+```
+server/        API FastAPI + dashboard web administrativo
+  app/
+    routers/   auth · empleados · reconocimiento · movimientos · stats · dispositivos · ws
+    static/    dashboard.html (panel de control con gráficos)
+  seed.py      crea las tablas y el primer administrador
+client/        Aplicación de escritorio (PySide6)
+  app/
+    ui/        login · ventana principal · alta de empleados
+    face_engine.py · camera.py · worker.py · api_client.py · arduino_serial.py
+arduino/        Sketch para apertura de puerta vía serie
 ```
 
-Instalar dependencias:
+---
+
+## 🚀 Puesta en marcha
+
+### 1. Base de datos (PostgreSQL)
+
+```sql
+CREATE DATABASE recfac;
+CREATE USER recfac WITH PASSWORD 'recfac';
+GRANT ALL PRIVILEGES ON DATABASE recfac TO recfac;
+```
+> También se soporta MySQL: usar `mysql+aiomysql://...` en `DATABASE_URL`.
+
+### 2. Servidor
 
 ```bash
+cd server
+python -m venv .venv && .venv\Scripts\activate     # Windows
 pip install -r requirements.txt
+copy .env.example .env                              # editar credenciales
+python -m seed                                      # crea tablas + admin
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
----
+- Panel administrativo: **http://localhost:8000/**
+- Documentación interactiva de la API: **http://localhost:8000/docs**
 
-## ▶️ Ejecución
+### 3. Cliente
 
 ```bash
-python main.py
+cd client
+python -m venv .venv && .venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env                              # editar SERVER_URL / cámara
+python -m app.main
 ```
 
-Al iniciar por primera vez:
-
-* Se creará automáticamente la base de datos (`recfac.db`)
-* Se inicializarán las tablas necesarias
+> La primera ejecución del cliente descarga el modelo InsightFace (`buffalo_l`).
 
 ---
 
-## 📁 Estructura del proyecto
+## ✨ Funcionalidades
 
-```bash
-.
-├── main.py              # Punto de entrada de la aplicación
-├── db.py                # Gestión de base de datos
-├── reconocimientos.db   # Base de datos SQLite
-├── requirements.txt
-└── README.md
-```
+**Cliente (kiosko)**
+- Cámara en vivo con detección de rostros superpuesta y multi-persona.
+- Registro de **entrada / salida** con un clic; valida estado (evita doble registro).
+- Alta de empleados capturando el rostro (solo rol *admin*).
+- Apertura de puerta opcional vía Arduino.
 
----
-
-## ⚠️ Consideraciones
-
-* Este proyecto no está optimizado para entornos productivos
-* El reconocimiento facial puede variar según condiciones de iluminación y calidad de cámara
-* No se implementan aún medidas avanzadas de seguridad o privacidad de datos
+**Servidor / Panel administrativo**
+- Autenticación segura (JWT + bcrypt) con roles `admin` / `operator`.
+- Dashboard con: personas **dentro** en tiempo real, entradas/salidas del día,
+  gráfico de 30 días, actividad reciente en vivo y estado de cámaras.
+- Administración de empleados (CRUD + búsqueda).
+- Registros históricos con filtros (tipo, fecha, empleado) y búsqueda.
+- API REST documentada (OpenAPI) + WebSocket de monitoreo.
 
 ---
 
-## 🤝 Contribuciones
+## 🔬 Reconocimiento facial
 
-Las contribuciones son bienvenidas. Para cambios importantes, se recomienda abrir un issue previamente para discutir la propuesta.
+| Antes                              | Ahora                                            |
+|------------------------------------|--------------------------------------------------|
+| Haar Cascade + `cv2.absdiff`       | InsightFace (detección SCRFD + ArcFace)          |
+| Diferencia de píxeles en escala gris | Embeddings 512-d + similitud coseno            |
+| Sensible a luz/ángulo, 1 rostro    | Robusto a iluminación/ángulos, multi-rostro      |
+| Comparación O(n) con imágenes      | Comparación vectorial rápida y estable           |
+
+El umbral de coincidencia es configurable (`FACE_MATCH_THRESHOLD`).
 
 ---
 
-## 📄 Licencia
+## 🔐 Seguridad y producción
 
-Este proyecto no tiene una licencia pública por el momento.  
-Todos los derechos están reservados.
-
-No está permitido usar, copiar, modificar ni distribuir este código sin autorización explícita del autor.
+- Cambiar `SECRET_KEY` y las credenciales del admin antes de desplegar.
+- Servir tras HTTPS (la conexión WebSocket usará `wss://` automáticamente).
+- Restringir `CORS` en `server/app/main.py` a los orígenes necesarios.
+- Para esquemas versionados usar Alembic (las tablas se autocrean en arranque
+  para facilitar el desarrollo).

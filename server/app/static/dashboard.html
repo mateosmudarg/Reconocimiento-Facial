@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RecFac · Panel de Control</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#22d3ee;
+    --green:#22c55e; --red:#ef4444; --amber:#f59e0b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+  body{background:var(--bg);color:var(--txt);min-height:100vh}
+  a{color:inherit}
+  /* Login */
+  #login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 50% -10%,#1e293b,#0f172a)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  #login .card{width:360px}
+  .logo{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+  .logo span{color:var(--accent2)}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+  label{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}
+  input,select{width:100%;padding:11px 13px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);font-size:14px;outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  button{cursor:pointer;border:none;border-radius:10px;font-size:14px;font-weight:600;transition:.15s}
+  .btn-primary{width:100%;margin-top:22px;padding:12px;background:var(--accent);color:#fff}
+  .btn-primary:hover{filter:brightness(1.1)}
+  .err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+  /* App */
+  #app{display:none;grid-template-columns:230px 1fr;min-height:100vh}
+  aside{background:var(--panel);border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:6px}
+  aside .logo{padding:0 8px 20px}
+  nav button{display:block;width:100%;text-align:left;padding:11px 14px;background:transparent;color:var(--muted);border-radius:10px;font-weight:500}
+  nav button.active,nav button:hover{background:var(--panel2);color:var(--txt)}
+  .spacer{flex:1}
+  .me{padding:0 8px;font-size:13px;color:var(--muted)}
+  main{padding:28px 32px;overflow:auto}
+  h1{font-size:22px;margin-bottom:4px}
+  .crumb{color:var(--muted);font-size:13px;margin-bottom:24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .stat .v{font-size:34px;font-weight:700;margin-top:8px}
+  .stat .v small{font-size:14px;color:var(--muted);font-weight:500}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
+  .panel h3{font-size:15px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--panel2)}
+  tr:hover td{background:var(--panel2)}
+  .tag{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+  .tag.entrada{background:rgba(34,197,94,.15);color:var(--green)}
+  .tag.salida{background:rgba(239,68,68,.15);color:var(--red)}
+  .tag.dentro{background:rgba(34,197,94,.15);color:var(--green)}
+  .tag.fuera{background:rgba(148,163,184,.15);color:var(--muted)}
+  .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .toolbar input,.toolbar select{width:auto;flex:1;min-width:140px}
+  .feed{max-height:340px;overflow:auto}
+  .feed .item{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--panel2);font-size:13px;animation:fade .4s}
+  @keyframes fade{from{opacity:0;transform:translateY(-6px)}to{opacity:1}}
+  .muted{color:var(--muted)}
+  .view{display:none}.view.active{display:block}
+  .logout{padding:10px 14px;background:var(--panel2);color:var(--muted);width:100%;text-align:left;border-radius:10px}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card">
+    <div class="logo">Rec<span>Fac</span></div>
+    <div class="sub">Panel de control de accesos</div>
+    <label>Usuario</label>
+    <input id="u" autocomplete="username" />
+    <label>Contraseña</label>
+    <input id="p" type="password" autocomplete="current-password" />
+    <button class="btn-primary" onclick="login()">Ingresar</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="logo">Rec<span>Fac</span></div>
+    <nav>
+      <button data-view="dashboard" class="active" onclick="go('dashboard')">📊 Dashboard</button>
+      <button data-view="empleados" onclick="go('empleados')">👥 Empleados</button>
+      <button data-view="registros" onclick="go('registros')">📁 Registros</button>
+      <button data-view="dispositivos" onclick="go('dispositivos')">📷 Dispositivos</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="me" id="me"></div>
+    <button class="logout" onclick="logout()">Cerrar sesión</button>
+  </aside>
+
+  <main>
+    <!-- Dashboard -->
+    <section class="view active" id="view-dashboard">
+      <h1>Dashboard</h1>
+      <div class="crumb">Monitoreo en tiempo real <span class="dot" id="wsdot" style="background:var(--amber)"></span><span id="wstxt" class="muted">conectando…</span></div>
+      <div class="grid">
+        <div class="stat"><div class="k">Dentro ahora</div><div class="v" id="s-dentro">–</div></div>
+        <div class="stat"><div class="k">Entradas hoy</div><div class="v" id="s-ent" style="color:var(--green)">–</div></div>
+        <div class="stat"><div class="k">Salidas hoy</div><div class="v" id="s-sal" style="color:var(--red)">–</div></div>
+        <div class="stat"><div class="k">Empleados</div><div class="v" id="s-emp">–</div></div>
+        <div class="stat"><div class="k">Cámaras online</div><div class="v" id="s-dev">–</div></div>
+      </div>
+      <div class="row">
+        <div class="panel">
+          <h3>Movimientos (últimos 30 días)</h3>
+          <canvas id="chart" height="120"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Actividad reciente</h3>
+          <div class="feed" id="feed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Empleados -->
+    <section class="view" id="view-empleados">
+      <h1>Empleados</h1>
+      <div class="crumb">Administración de personal</div>
+      <div class="toolbar">
+        <input id="empSearch" placeholder="Buscar por nombre, documento o área…" oninput="loadEmpleados()" />
+      </div>
+      <div class="panel"><table>
+        <thead><tr><th>Nombre</th><th>Documento</th><th>Área</th><th>Estado</th><th>Presencia</th></tr></thead>
+        <tbody id="empBody"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Registros -->
+    <section class="view" id="view-registros">
+      <h1>Registros históricos</h1>
+      <div class="crumb">Búsqueda de ingresos y egresos</div>
+      <div class="toolbar">
+        <input id="regSearch" placeholder="Nombre del empleado…" />
+        <select id="regTipo"><option value="">Todos</option><option value="entrada">Entradas</option><option value="salida">Salidas</option></select>
+        <input id="regDesde" type="date" />
+        <input id="regHasta" type="date" />
+        <button class="btn-primary" style="width:auto;margin:0;padding:10px 18px" onclick="loadRegistros()">Buscar</button>
+      </div>
+      <div class="panel"><table>
+        <thead><tr><th>Fecha y hora</th><th>Empleado</th><th>Tipo</th><th>Confianza</th><th>Dispositivo</th></tr></thead>
+        <tbody id="regBody"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Dispositivos -->
+    <section class="view" id="view-dispositivos">
+      <h1>Dispositivos</h1>
+      <div class="crumb">Estado de cámaras y kioscos</div>
+      <div class="panel"><table>
+        <thead><tr><th>Nombre</th><th>Ubicación</th><th>Último contacto</th><th>Estado</th></tr></thead>
+        <tbody id="devBody"></tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const API = location.origin;
+let token = localStorage.getItem("recfac_token") || "";
+let chart, ws;
+
+async function api(path, opts={}){
+  const r = await fetch(API+path, {...opts, headers:{...(opts.headers||{}),"Authorization":"Bearer "+token}});
+  if(r.status===401){ logout(); throw new Error("no auth"); }
+  return r;
+}
+
+async function login(){
+  const u=document.getElementById("u").value, p=document.getElementById("p").value;
+  const body=new URLSearchParams({username:u,password:p});
+  const r=await fetch(API+"/api/auth/login",{method:"POST",body});
+  if(!r.ok){ document.getElementById("loginErr").textContent="Credenciales incorrectas"; return; }
+  const d=await r.json();
+  token=d.access_token; localStorage.setItem("recfac_token",token);
+  document.getElementById("me").textContent=d.full_name+" · "+d.role;
+  start();
+}
+function logout(){ localStorage.removeItem("recfac_token"); token=""; if(ws)ws.close();
+  document.getElementById("app").style.display="none"; document.getElementById("login").style.display="flex"; }
+
+function go(v){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
+  document.querySelectorAll(".view").forEach(s=>s.classList.toggle("active",s.id==="view-"+v));
+  if(v==="empleados")loadEmpleados();
+  if(v==="registros")loadRegistros();
+  if(v==="dispositivos")loadDispositivos();
+}
+
+function fmt(ts){ return new Date(ts).toLocaleString("es",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); }
+
+async function loadResumen(){
+  const d=await (await api("/api/stats/resumen")).json();
+  s_dentro.textContent=d.dentro; s_ent.textContent=d.entradas_hoy;
+  s_sal.textContent=d.salidas_hoy; s_emp.textContent=d.total_empleados; s_dev.textContent=d.dispositivos_online;
+}
+async function loadSeries(){
+  const d=await (await api("/api/stats/series?dias=30")).json();
+  const labels=d.map(x=>x.fecha.slice(5));
+  const cfg={type:"line",data:{labels,datasets:[
+    {label:"Entradas",data:d.map(x=>x.entradas),borderColor:"#22c55e",backgroundColor:"rgba(34,197,94,.1)",tension:.35,fill:true},
+    {label:"Salidas",data:d.map(x=>x.salidas),borderColor:"#ef4444",backgroundColor:"rgba(239,68,68,.1)",tension:.35,fill:true}]},
+    options:{plugins:{legend:{labels:{color:"#94a3b8"}}},scales:{x:{ticks:{color:"#64748b"},grid:{color:"#1e293b"}},y:{ticks:{color:"#64748b"},grid:{color:"#1e293b"}}}}};
+  if(chart)chart.destroy();
+  chart=new Chart(document.getElementById("chart"),cfg);
+}
+async function loadFeed(){
+  const d=await (await api("/api/stats/actividad?limit=15")).json();
+  feed.innerHTML=d.map(renderFeed).join("");
+}
+function renderFeed(m){
+  return `<div class="item"><span><b>${m.nombre}</b> <span class="tag ${m.tipo}">${m.tipo}</span></span><span class="muted">${fmt(m.timestamp)}</span></div>`;
+}
+function prependFeed(m){ feed.insertAdjacentHTML("afterbegin",renderFeed(m)); }
+
+async function loadEmpleados(){
+  const q=document.getElementById("empSearch").value;
+  const d=await (await api("/api/empleados"+(q?"?buscar="+encodeURIComponent(q):""))).json();
+  empBody.innerHTML=d.map(e=>`<tr><td>${e.nombre}</td><td>${e.documento||"–"}</td><td>${e.departamento||"–"}</td>
+    <td>${e.activo?"Activo":"Inactivo"}</td><td><span class="tag ${e.dentro?'dentro':'fuera'}">${e.dentro?'Dentro':'Fuera'}</span></td></tr>`).join("");
+}
+async function loadRegistros(){
+  const p=new URLSearchParams();
+  const s=regSearch.value, t=regTipo.value, de=regDesde.value, h=regHasta.value;
+  if(s)p.set("buscar",s); if(t)p.set("tipo",t); if(de)p.set("desde",de); if(h)p.set("hasta",h);
+  const d=await (await api("/api/movimientos?"+p)).json();
+  regBody.innerHTML=d.map(m=>`<tr><td>${fmt(m.timestamp)}</td><td>${m.nombre}</td>
+    <td><span class="tag ${m.tipo}">${m.tipo}</span></td><td>${(m.confianza*100).toFixed(1)}%</td><td>${m.dispositivo||"–"}</td></tr>`).join("");
+}
+async function loadDispositivos(){
+  const d=await (await api("/api/dispositivos")).json();
+  devBody.innerHTML=d.length?d.map(x=>`<tr><td>${x.nombre}</td><td>${x.ubicacion||"–"}</td>
+    <td>${x.last_seen?fmt(x.last_seen):"–"}</td><td><span class="dot" style="background:${x.online?'var(--green)':'var(--red)'}"></span>${x.online?'Online':'Offline'}</td></tr>`).join("")
+    :`<tr><td colspan="4" class="muted">Sin dispositivos registrados</td></tr>`;
+}
+
+function connectWS(){
+  ws=new WebSocket((location.protocol==="https:"?"wss":"ws")+"://"+location.host+"/ws/monitor?token="+token);
+  ws.onopen=()=>{wsdot.style.background="var(--green)";wstxt.textContent="en vivo";};
+  ws.onclose=()=>{wsdot.style.background="var(--red)";wstxt.textContent="desconectado";setTimeout(()=>{if(token)connectWS()},3000);};
+  ws.onmessage=ev=>{ const m=JSON.parse(ev.data); if(m.evento==="movimiento"){ prependFeed(m); loadResumen(); } };
+}
+
+async function start(){
+  document.getElementById("login").style.display="none";
+  document.getElementById("app").style.display="grid";
+  try{
+    const me=await (await api("/api/auth/me")).json();
+    document.getElementById("me").textContent=me.full_name+" · "+me.role;
+  }catch(e){return;}
+  await loadResumen(); await loadSeries(); await loadFeed(); connectWS();
+  setInterval(loadResumen,30000);
+}
+
+if(token) start();
+document.getElementById("p").addEventListener("keydown",e=>{if(e.key==="Enter")login();});
+</script>
+</body>
+</html>
